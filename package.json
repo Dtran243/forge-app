@@ -1,0 +1,26 @@
+{
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^1.24.0",
+    "@supabase/supabase-js": "^2.99.1",
+    "@types/react": "~19.2.10",
+    "expo": "^55.0.6",
+    "expo-linking": "~55.0.7",
+    "expo-router": "~55.0.5",
+    "nativewind": "^4.2.3",
+    "react": "19.2.4",
+    "react-dom": "^19.2.4",
+    "react-native": "0.83.2",
+    "react-native-reanimated": "4.2.1",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-svg": "15.15.3",
+    "tailwindcss": "^3.4.19",
+    "zod": "^3.25.76",
+    "zustand": "^4.5.7"
+  },
+  "devDependencies": {
+    "babel-preset-expo": "^55.0.11",
+    "typescript": "~5.3.0"
+  }
+}

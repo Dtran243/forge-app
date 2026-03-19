@@ -1,0 +1,7 @@
+** BUILD FAILED **
+
+
+The following build commands failed:
+	PhaseScriptExecution [CP]\ Check\ Pods\ Manifest.lock /Users/dericktran/Library/Developer/Xcode/DerivedData/forge-bhuzeqowdwxqgnbjoximpslzfucd/Build/Intermediates.noindex/forge.build/Debug-iphonesimulator/forge.build/Script-08A4A3CD28434E44B6B9DE2E.sh (in target 'forge' from project 'forge')
+	Building project forge with scheme forge and configuration Debug
+(2 failures)

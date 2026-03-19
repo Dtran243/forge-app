@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Forge",
+    "slug": "forge",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "forge",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.dric.forge",
+      "supportsTablet": false
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
