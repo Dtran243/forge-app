@@ -9,10 +9,20 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.dric.forge",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Forge reads your HRV, sleep, and workout data to calibrate your training program.",
+        "NSHealthUpdateUsageDescription": "Forge does not write to Apple Health."
+      }
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "react-native-health",
+        {
+          "isClinicalDataEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
