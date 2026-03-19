@@ -27,6 +27,7 @@ Deno.serve(async (req: Request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!;
 
   // ── Authenticate ─────────────────────────────────────────────────────────────
@@ -35,32 +36,36 @@ Deno.serve(async (req: Request) => {
     return jsonError('Missing Authorization header', 401);
   }
 
-  let userId: string;
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const [, payloadB64] = token.split('.');
-    const b64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = b64.padEnd(b64.length + (4 - (b64.length % 4)) % 4, '=');
-    const payload = JSON.parse(atob(padded));
-    userId = payload.sub as string;
-    if (!userId) throw new Error('No subject');
-  } catch {
-    return jsonError('Invalid token', 401);
-  }
+  // Try to verify as a user JWT. If verified, use user.id and ignore body.user_id.
+  // If not (service role call from engine-run), accept user_id from the body.
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error: authError } = await userClient.auth.getUser();
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
   // ── Parse payload ─────────────────────────────────────────────────────────────
-  let payload: { user_id?: string; week_ending: string };
+  let body: { user_id?: string; week_ending: string };
   try {
-    payload = await req.json();
+    body = await req.json();
   } catch {
     return jsonError('Invalid JSON body', 400);
   }
 
-  // Allow user_id override from body (when called by engine-run with service role)
-  if (payload.user_id) userId = payload.user_id;
-  const { week_ending } = payload;
+  let userId: string;
+  if (!authError && user) {
+    // Authenticated user — use their verified ID, ignore any body.user_id
+    userId = user.id;
+  } else {
+    // Service role call (e.g. from engine-run) — accept user_id from body
+    if (!body.user_id) {
+      return jsonError('user_id required', 400);
+    }
+    userId = body.user_id;
+  }
+
+  const { week_ending } = body;
 
   // ── Read engine decisions for this week ───────────────────────────────────────
   const { data: engineRow, error: engineError } = await admin

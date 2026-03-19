@@ -47,26 +47,26 @@ Deno.serve(async (req: Request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!;
 
   // ── Authenticate ─────────────────────────────────────────────────────────────
+  // verify_jwt = false in config.toml so Supabase gateway skips verification.
+  // We verify manually here using auth.getUser() which validates the signature
+  // server-side against the Supabase auth service.
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
     return jsonError('Missing Authorization header', 401);
   }
 
-  let userId: string;
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const [, payloadB64] = token.split('.');
-    const b64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = b64.padEnd(b64.length + (4 - (b64.length % 4)) % 4, '=');
-    const payload = JSON.parse(atob(padded));
-    userId = payload.sub as string;
-    if (!userId) throw new Error('No subject');
-  } catch {
-    return jsonError('Invalid token', 401);
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error: authError } = await userClient.auth.getUser();
+  if (authError || !user) {
+    return jsonError('Unauthorized', 401);
   }
+  const userId = user.id;
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
 

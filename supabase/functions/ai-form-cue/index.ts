@@ -9,6 +9,7 @@
  * - Client caches per exercise per session to avoid repeat calls
  */
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.20.1';
 import { forgeExerciseTechnique } from '../_shared/docs/forge-exercise-technique.ts';
 
@@ -25,7 +26,23 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!;
+
+  // ── Authenticate ─────────────────────────────────────────────────────────────
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    return jsonError('Missing Authorization header', 401);
+  }
+
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error: authError } = await userClient.auth.getUser();
+  if (authError || !user) {
+    return jsonError('Unauthorized', 401);
+  }
 
   // ── Parse payload ─────────────────────────────────────────────────────────────
   let payload: { exercise_name: string; context?: string };

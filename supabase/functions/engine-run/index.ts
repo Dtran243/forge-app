@@ -65,6 +65,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
   // ── Authenticate ─────────────────────────────────────────────────────────────
   const authHeader = req.headers.get('Authorization');
@@ -72,19 +73,14 @@ async function handleRequest(req: Request): Promise<Response> {
     return jsonError('Missing Authorization header', 401);
   }
 
-  // Decode JWT payload to extract sub (works for both user and service-role tokens).
-  // Service-role tokens have no sub — in that case we require user_id in the body.
-  let subFromToken: string | null = null;
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const [, payloadB64] = token.split('.');
-    const b64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = b64.padEnd(b64.length + (4 - (b64.length % 4)) % 4, '=');
-    const decoded = JSON.parse(atob(padded));
-    subFromToken = decoded.sub ?? null;
-  } catch {
-    // ignore — sub stays null
-  }
+  // Try to verify the token as a user JWT via auth.getUser().
+  // If it succeeds, the caller is a real authenticated user.
+  // If it fails, the caller is using the service role key (cron job) — in that
+  // case we accept user_id from the request body.
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error: authError } = await userClient.auth.getUser();
 
   let body: { user_id?: string };
   try {
@@ -93,10 +89,18 @@ async function handleRequest(req: Request): Promise<Response> {
     body = {};
   }
 
-  const userId = body.user_id ?? subFromToken;
-  if (!userId) {
-    return jsonError('user_id required', 400);
+  let userId: string;
+  if (!authError && user) {
+    // Authenticated user — use their verified ID, ignore any body.user_id
+    userId = user.id;
+  } else {
+    // No verified user — must be a service role call (cron job)
+    if (!body.user_id) {
+      return jsonError('user_id required', 400);
+    }
+    userId = body.user_id;
   }
+
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
   // ── 1. Read full athlete state snapshot ───────────────────────────────────────
