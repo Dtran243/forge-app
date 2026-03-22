@@ -2,6 +2,7 @@
   "expo": {
     "name": "Forge",
     "slug": "forge",
+    "icon": "./assets/icon.png",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "forge",
@@ -9,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.dric.forge",
-      "buildNumber": "4",
+      "buildNumber": "8",
       "supportsTablet": false,
       "infoPlist": {
         "NSHealthShareUsageDescription": "Forge reads your HRV, sleep, and workout data to calibrate your training program.",
